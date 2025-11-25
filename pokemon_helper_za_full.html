@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>寶可夢ZA 屬性查詢器（完整版）</title>
+  <style>
+    body { font-family: sans-serif; background: #f0f4f8; padding: 20px; font-size: 22px; }
+    input, button { font-size: 24px; padding: 10px; margin-bottom: 15px; width: 80%; display: block; }
+    button { width: 84%; background: #4CAF50; color: white; border: none; border-radius: 8px; }
+    .result { background: #fff; padding: 20px; border-radius: 12px; margin-top: 20px; }
+    .multiplier { margin: 5px 0; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 26px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>寶可夢ZA 弱點與戰術建議查詢</h1>
+  <input type="text" id="inputName" placeholder="輸入寶可夢中文名稱，如：耿鬼">
+  <button onclick="lookup()">查詢</button>
+  <div class="result" id="output"></div>
+  <script>
+    const myTeam = {
+      "蒼焰巨龍": ["dragon", "fire"],
+      "快龍": ["dragon", "flying"],
+      "胖丁": ["normal", "fairy"],
+      "超能妙喵": ["psychic"],
+      "鬃岩狼人": ["rock"],
+      "長尾火狐": ["fire"]
+    };
+
+    const typeChart = {
+      normal:{rock:0.5,ghost:0,steel:0.5},
+      fire:{fire:0.5,water:0.5,grass:2,ice:2,bug:2,rock:0.5,dragon:0.5,steel:2},
+      water:{fire:2,water:0.5,grass:0.5,ground:2,rock:2,dragon:0.5},
+      electric:{water:2,electric:0.5,grass:0.5,ground:0,flying:2,dragon:0.5},
+      grass:{fire:0.5,water:2,grass:0.5,poison:0.5,ground:2,flying:0.5,bug:0.5,rock:2,dragon:0.5,steel:0.5},
+      ice:{fire:0.5,water:0.5,grass:2,ice:0.5,ground:2,flying:2,dragon:2,steel:0.5},
+      fighting:{normal:2,ice:2,rock:2,dark:2,steel:2,poison:0.5,flying:0.5,psychic:0.5,bug:0.5,ghost:0,fairy:0.5},
+      poison:{grass:2,poison:0.5,ground:0.5,rock:0.5,ghost:0.5,steel:0,fairy:2},
+      ground:{fire:2,electric:2,grass:0.5,poison:2,flying:0,bug:0.5,rock:2,steel:2},
+      flying:{electric:0.5,grass:2,fighting:2,bug:2,rock:0.5,steel:0.5},
+      psychic:{fighting:2,poison:2,psychic:0.5,dark:0,steel:0.5},
+      bug:{fire:0.5,grass:2,fighting:0.5,poison:0.5,flying:0.5,psychic:2,ghost:0.5,dark:2,steel:0.5,fairy:0.5},
+      rock:{fire:2,ice:2,fighting:0.5,ground:0.5,flying:2,bug:2,steel:0.5},
+      ghost:{normal:0,psychic:2,ghost:2,dark:0.5},
+      dragon:{dragon:2,steel:0.5,fairy:0},
+      dark:{fighting:0.5,psychic:2,ghost:2,dark:0.5,fairy:0.5},
+      steel:{fire:0.5,water:0.5,electric:0.5,ice:2,rock:2,fairy:2},
+      fairy:{fire:0.5,fighting:2,poison:0.5,dragon:2,dark:2,steel:0.5}
+    };
+
+    const pokemonData = {
+      "耿鬼": { "en": "gengar", "types": ["ghost", "poison"] },
+      "快龍": { "en": "dragonite", "types": ["dragon", "flying"] },
+      "烈咬陸鯊": { "en": "garchomp", "types": ["dragon", "ground"] },
+      "皮卡丘": { "en": "pikachu", "types": ["electric"] },
+      "噴火龍": { "en": "charizard", "types": ["fire", "flying"] },
+      "妙蛙花": { "en": "venusaur", "types": ["grass", "poison"] },
+      "水箭龜": { "en": "blastoise", "types": ["water"] },
+      "雷丘": { "en": "raichu", "types": ["electric"] },
+      "路卡利歐": { "en": "lucario", "types": ["fighting", "steel"] },
+      "火伊布": { "en": "flareon", "types": ["fire"] }
+    };
+
+    function lookup() {
+      const name = document.getElementById("inputName").value.trim();
+      const p = pokemonData[name];
+      const out = document.getElementById("output");
+      if (!p) {
+        out.innerHTML = "找不到該寶可夢。請輸入正確中文名稱。";
+        return;
+      }
+
+      const types = p.types;
+      let result = `<h2>${name}（${p.en}）</h2><p>屬性：${types.join(" / ")}</p>`;
+
+      const groups = { x4: [], x2: [], x1: [], x05: [], x025: [], x0: [] };
+      for (const atk in typeChart) {
+        let mult = 1;
+        types.forEach(t => mult *= (typeChart[atk][t] || 1));
+        if (mult === 4) groups.x4.push(atk);
+        else if (mult === 2) groups.x2.push(atk);
+        else if (mult === 1) groups.x1.push(atk);
+        else if (mult === 0.5) groups.x05.push(atk);
+        else if (mult === 0.25) groups.x025.push(atk);
+        else if (mult === 0) groups.x0.push(atk);
+      }
+
+      const formatList = (label, arr) => arr.length ? `<p class="multiplier"><strong>${label}：</strong> ${arr.join("、")}</p>` : "";
+
+      result += formatList("🔥 弱點 x4", groups.x4);
+      result += formatList("🔥 弱點 x2", groups.x2);
+      result += formatList("🛡 抗性 x0.5", groups.x05);
+      result += formatList("🛡 超抗 x0.25", groups.x025);
+      result += formatList("🧊 無效 x0", groups.x0);
+
+      const enemyWeak = [...groups.x4, ...groups.x2];
+      const enemyResist = [...groups.x05, ...groups.x025, ...groups.x0];
+
+      let attackSuggestions = [];
+      let defenseSuggestions = [];
+      let balancedSuggestions = [];
+
+      for (const [mon, types] of Object.entries(myTeam)) {
+        const off = types.filter(t => enemyWeak.includes(t)).length;
+        const def = types.filter(t => enemyResist.includes(t)).length;
+        if (off) attackSuggestions.push(mon);
+        if (def) defenseSuggestions.push(mon);
+        if (off && def) balancedSuggestions.push(mon);
+      }
+
+      result += "<h2>我方隊伍建議</h2>";
+      result += formatList("🔺 推薦上場（打得痛）", attackSuggestions);
+      result += formatList("🛡 安全首發（抗性好）", defenseSuggestions);
+      result += formatList("⚔️ 多面向（能攻能守）", balancedSuggestions);
+
+      out.innerHTML = result;
+    }
+  </script>
+</body>
+</html>
